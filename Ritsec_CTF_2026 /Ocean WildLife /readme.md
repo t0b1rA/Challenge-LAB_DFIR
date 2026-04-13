@@ -1,4 +1,4 @@
-<img width="1919" height="974" alt="image" src="https://github.com/user-attachments/assets/8045d19c-4090-45ad-b4fd-9189cf6b3d17" /># Ocean Wildlife 
+# Ocean Wildlife 
 
 <img width="1113" height="651" alt="Screenshot 2026-04-04 133110" src="https://github.com/user-attachments/assets/cac66f7a-2683-4ac9-8f24-a93f4ae619ad" />
 
