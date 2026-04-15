@@ -50,9 +50,7 @@ Nhưng chúng ta cũng vẫn còn 1 luồng gửi dữ liệu từ `10.42.0.10` 
 
 <img width="1890" height="924" alt="image" src="https://github.com/user-attachments/assets/5916caf2-61e0-4f7c-bbda-3776cf613114" />
 
-Vì vậy chúng ta có thể thấy được giao thức IP đã tách cục dữ liệu đó thành các fragments và đưa nó vào các tổng 9 packet, cũng đã được khai báo bên trong phần `Ipv4 fragments`. Bên trong đây sẽ chứa các bitmap để dựng nên thành 1 bức ảnh 3d, bây giờ mình sẽ bắt đầu thực hiện trích xuất các cục dữ liệu này ra. 
-
-<img width="1111" height="733" alt="image" src="https://github.com/user-attachments/assets/371fd5f9-259f-45d4-a674-a9acb617525d" />
+Vì vậy chúng ta có thể thấy được giao thức IP đã tách cục dữ liệu đó thành các fragments và đưa nó vào các tổng 9 packet, cũng đã được khai báo bên trong phần `Ipv4 fragments`. Bên trong đây sẽ chứa các bitmap để dựng nên thành 1 bức ảnh 3d, việc trích xuất dữ liệu từ tay bằng công cụ tshark trong challenge này sẽ làm thiếu hụt di các `data` cần thiết bởi vì, chúng ta cần hiểu được định tin nhắn `sensor_msg/msg/PoinCloud2` của cấu trúc `ROS2`.
 
 Sau đó, mình sẽ viết 1 script thực hiện ghép các bitmap này tạo thành 1 ảnh 3d, chứa messages của challenge này:
 <details>
@@ -464,6 +462,9 @@ if __name__ == '__main__':
 
 **flag: RS{D4vy_J0nes_Sp3aks_1n_51l3nce}**
 
+- Script trên dùng thư viện `pyshark` để lắng nghe trực tiếp các gói tin gửi phần `data` chứa các bitmap, và các bytes chứa tọa độ `x,y,z` được gửi từ các packet `DATA_FRAG`.
+- Việc script này nắm được cấu trúc `ROS2`, và định nghĩa được các tin nhắn `sensor_msg/msg/PointCloud2`. Chứ không đoán header.
+- Ghép các file `Reassembly` chứ khong thực hiện lấy toàn bộ `udp_payload` giúp khong bị thừa bytes bên trong file `.bin`
 ---
 
 <img width="1872" height="886" alt="image" src="https://github.com/user-attachments/assets/9080719f-c860-4dd9-980e-a086c0f82cf9" />
