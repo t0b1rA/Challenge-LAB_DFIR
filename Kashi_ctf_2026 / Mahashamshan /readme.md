@@ -94,7 +94,7 @@ Lấy chuỗi hex trong `token` và thực hiện decode hex thì có được f
 kashiCTF{h3x_1n_b0dy_15_n0t_1t}     
 ```
 
-Bây giờ mình sẽ đi vào phần chính trong bài, là phần message thật sự đã bị leak ra ngoài, mình để ý hầu hết các packet đều từ ip `192.168.7.77`, và khi mình sử dụng conversation ở `ip.src == 192.168.7.77`, mình sẽ thấy nó thực hiện gửi các packet cho 1 ip `172.31.0.1` từ rất nhiều port khác nhau:
+Bây giờ mình sẽ đi vào phần chính trong bài, là phần message thật sự đã bị exfil ra ngoài, mình để ý hầu hết các packet đều từ ip `192.168.7.77`, và khi mình sử dụng conversation ở `ip.src == 192.168.7.77`, mình sẽ thấy nó thực hiện gửi các packet cho 1 ip `172.31.0.1` từ rất nhiều port khác nhau:
 
 <img width="1689" height="732" alt="image" src="https://github.com/user-attachments/assets/7c3185b4-7903-46fc-8674-79ead8f9f688" />
 
