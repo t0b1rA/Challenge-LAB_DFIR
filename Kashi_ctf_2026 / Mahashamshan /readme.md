@@ -2,7 +2,7 @@
 
 <img width="598" height="811" alt="Screenshot 2026-04-05 121152" src="https://github.com/user-attachments/assets/8a053841-db0f-4ff3-930f-e4f77fe95629" />
 
-Link challenge: 
+Link challenge: https://drive.google.com/file/d/1qLfENy_pwemxQaUdaIEUgtIZdpovdFoE/view?usp=sharing
 
 Description: Một file pcap đã được trích xuất từ một node bị compromised trong 1 mạng lưới liên lạc ngầm. Đặc vụ thu thập được file này và để lại cho chúng ta 1 vài lời nhắn: 'The river does not reveal itself. It only flows' and 'not all fields are what they seem. The fragment offset field hides more that offset'. Cùng với một lời nhắc là trong challenge này có rất nhiều fake flag, chúng ta cần làm cẩn thận.
 
