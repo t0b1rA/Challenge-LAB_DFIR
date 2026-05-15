@@ -167,7 +167,7 @@ Khi đó mình thực hiện encrypt file `homework.jpg` bằng key: N3v3rG0n4G1
 
 <img width="3064" height="1726" alt="image" src="https://github.com/user-attachments/assets/aea13f29-1d45-4cf7-acf0-b6a97ae9ba8e" />
 
-<img width="832" height="139" alt="flag" src="https://github.com/user-attachments/assets/561d5122-0f0c-462c-90fa-e3966d15cc97" />
+<img width="920" height="205" alt="image" src="https://github.com/user-attachments/assets/c2b1278e-199e-48fb-bb04-b7415b34600d" />
 
 **flag: BKISCTF{Y0u_G0t_A_F0r_Th1s_St3g4n0gr4phy_Cl4ss}**
 
