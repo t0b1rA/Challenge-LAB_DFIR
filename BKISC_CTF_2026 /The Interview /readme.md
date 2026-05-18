@@ -114,7 +114,7 @@ Tiếp theo mình đến artifact tiếp theo là 3 app trò chuyện `twitter, 
 
 Thì họ yêu cầu mình tìm ra đúng format sau: `zz.zzz,yy.yyy` của x và y trên gg map, và với hint được ban cho thì mình tìm được:
 
-<img width="1088" height="519" alt="image" src="https://github.com/user-attachments/assets/9fa79b5e-a6b8-4a47-ae8f-cdd706c6d8fe" />
+<img width="1173" height="594" alt="image" src="https://github.com/user-attachments/assets/091ecacd-ce2e-4279-87ee-478d2087d539" />
 
 Chuyển đổi ra là `10.798,106.708` - password của pastebin.com và mình lấy được part cuối:
 
