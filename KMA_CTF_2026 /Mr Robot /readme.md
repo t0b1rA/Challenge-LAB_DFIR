@@ -1,4 +1,4 @@
-<img width="1909" height="1019" alt="image" src="https://github.com/user-attachments/assets/e07fcecb-49a1-4f87-baa8-23c68efed56a" /># Mr Robot
+# Mr Robot
 
 <img width="869" height="892" alt="image" src="https://github.com/user-attachments/assets/c790f63d-828c-40bf-8b74-765de85db65e" />
 
