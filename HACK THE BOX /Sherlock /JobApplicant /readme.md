@@ -322,6 +322,7 @@ Check log event id 4768 (Kerberos TGT Request) -> khi mà attacker thành công 
 ```
 
 <img width="1323" height="728" alt="image" src="https://github.com/user-attachments/assets/08fe9802-b599-4195-a2e1-0dc4b18cf00f" />
+
 **3. DCSync Attack + Golden ticket -> Gaining access admin - persistence - backdoor**
 Cuối cùng khi attacker đã có được account administrator của domain, Attacker sẽ khai thác một lỗ hổng hợp lệ của Domain controller, đó là quá trình replicate giữa các domain để thực hiện cập nhật các thay đổi trong các domain với nhau -> quá trình này dẫn đến việc khi attacker đã có 1 quyền đủ để thực hiện gửi 1 request replicate -> attacker có thể yêu cầu nhận được hash của account krbtgt (giả sử dùng để yêu cầu update credentials information chẳng hạn) -> khi đó dẫn đến việc attacker tạo ra được golden ticket từ hash của krbtgt + user account administrator trong domain.
 > Blog cho kỹ thuật khai thác: https://www.extrahop.com/resources/attacks/dcsync
