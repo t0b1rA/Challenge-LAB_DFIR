@@ -1,4 +1,4 @@
-# Kraken
+<img width="1897" height="814" alt="image" src="https://github.com/user-attachments/assets/91c2421b-c93e-426b-bf0f-9d454e75a40d" /># Kraken
 
 <img width="1598" height="657" alt="image" src="https://github.com/user-attachments/assets/5966b0c8-f6db-45c4-9597-65ae6f93ecb4" />
 
@@ -748,3 +748,68 @@ Và cuối cùng thực hiện patch memory của AMSI `securityDelegate.Invoke(
 
 ### Task 5: What is the SHA-1 hash of the PE file created during the infection process, not malicious on its own?
 
+Dùng cyberchef để decode base64 -> decrypt AES-CBC với key và iv đã đính sẳn trong script payload 1 -> gunzip sẽ sinh ra 2 file PE và mỗi blob cho 1 file PE sẽ phân tách bởi dấu `\`, nên dùng script để tách blob rồi dùng cyberchef để decrypt, mình đã làm sẳn xong hết nên mình đưa lên cyberchef để check file PE không phải malicious thôi
+
+<img width="1918" height="873" alt="image" src="https://github.com/user-attachments/assets/28fe5b14-da80-4dd1-9f7a-79638432504b" />
+
+Đây hoàn toàn là 1 con malware decoy/stub không có bất cứ hành vi nào:
+
+<img width="1884" height="660" alt="image" src="https://github.com/user-attachments/assets/caf72125-cb62-484f-8dd4-75cf07f1cd9b" />
+
+-> **sha1**: 339e27243df24f2b8979e78711e396698f4f47cc
+
+### Task 6: In the third stage, what is the name of the malicious encrypted file that is injected into memory?
+
+Tới đây phân tích hành vi của malware, vì mình không thực sự giỏi kỹ năng reverse malware nên mình sẽ không thể làm đầy đủ, mình sẽ nói các hành vi chính, các string, và file mà nó drop hoặc load vào memory. Ở đây file PE malicious là malware chính là file payload blob thứ 2, malware **uapnaeviuv.tmp**, nếu đưa lên virustotal hoặc sử dụng detect it easy thì c malware này được compiler bằng C#/MSIL.
+
+<img width="1919" height="1011" alt="image" src="https://github.com/user-attachments/assets/871b30d3-b0b1-4a7d-a938-6b4577ca6d65" />
+
+Toàn bộ hành vi của malware stage2 này là: Đầu tiên sau khi nó được load trực tiếp vào memory sau khi decrypt thì nó thực hiện:
+-> Kiểm tra quyền admin hay k? Nếu có quyền admin, thực hiện Windows Defender exclusive cho folder hiện tại chứa file .bat
+-> Tiếp theo thực hiện load từ kernel32.dll các native function như: `GetModuleHandle, GetProcAddress` để lấy module handle là `ntdll.dll` và procAddr là `EtWEvenWrite` để thực hiện patch memory luôn return về 0 mỗi lần scan
+-> Load vào Assembly một resource `xxxxxxxxxxxxxxxxxxxxxxxxxxxx.exe`, sau đó thực hiện decrypt AES với key và iv hardcord và thực hiện decompress gzip, cuối cùng thực hiện Assembly load toàn bộ resource sau decrypt vào memory và Invoke trong memory.
+-> Tạo persistence bằng 1 file .bat (copy toàn bộ bytes của file dwm.bat) với số ngẫu nhiên trong thư mục `startup`.
+
+=> **Name of malicious encrypted file:** xxxxxxxxxxxxxxxxxxxxxxxxxxxx.exe
+
+### Task 7: What encryption key and initialization vector (IV) were used to decrypt the file prior to memory injection?
+
+Chính là 2 pattern được đính cứng trong source của malware stage2 này với:
+```
+key: ALWIGeOnxudniHR2K4CNZmnaEZffXt6zKsRFoAM2/mA=
+iv: JXYbOTuuz3cErOl30kAKhw==
+```
+
+### Task 8: What is the SHA-1 hash of that file after decryption?
+
+Lúc này sau khi thực hiện decrypt xong sẽ sinh ra 1 file `MZ` mới, chính là final stage, upload lên virustotal để lấy sha1: 052c0687f023564a3c31fb652bea3405341272cb, với final stage malware này nó có tên là MasonClient1.exe, đây là con RAT thực hiện rất nhiều hành vi khác nhau và để phân tích cần reverse rất sâu trong các hàm, nên mình chỉ để lại 1 file hành vi của c malware final stage này ở 1 file riêng, chứ k reverse.
+
+<img width="1897" height="814" alt="image" src="https://github.com/user-attachments/assets/7ab5cb9b-d135-4532-aee4-e6957b8dab20" />
+
+### Task 9: There are 3 user agent strings in that PE File, what is the one related to the Mobile Device?
+
+Check full phần hàm bên trong Class Concentrate sẽ thấy user agent của iphone:
+
+<img width="1877" height="571" alt="image" src="https://github.com/user-attachments/assets/70cf99ac-9f02-4b8a-b5cf-7432b6d7d899" />
+
+-> Mozilla/5.0 (iPhone; CPU iPhone OS 11_4_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/11.0 Mobile/15E148 Safari/604.1
+
+### Task10: What variable stores the mutex object created by this binary?
+
+Mutex thường dùng trong malware engineer để cho nó chỉ tạo 1 instance duy nhất chạy trên máy của victim, ở đây nó hỏi variable stores the mutex object, tức là hỏi tên biến lưu mutex là gì, thì chính là **Territories**:
+
+<img width="1229" height="210" alt="image" src="https://github.com/user-attachments/assets/b2ba7a54-b2f8-434f-86ee-39a8568ddb6b" />
+
+### Task 11: What is the ip address and port number that C2 file connects to during that time?
+
+Mình có reverse 1 tí qua thì mình k thấy 1 ip address rõ ràng bên trong này, nó chỉ lưu port bên trong, nên mình lên virustotal để check ip:port gốc được ghi lại public là gì:
+
+<img width="1419" height="199" alt="image" src="https://github.com/user-attachments/assets/4c6a4afe-3c2b-4dbf-974e-b715354bdcb5" />
+
+**ip:port**: 107.172.232.84:2468
+
+### Task 12: A persistence file was dropped to maintain access for the attacker. What is the full path of this file?
+
+Ở trong stage2 ở file PE malicious, mình đã nhắc đến hành vi drop file vào startup thực hiện persistence, mỗi khi user reboot lại máy, full path là: `C:\Users\Administrator\AppData\Roaming\Microsoft\Windows\Start Menu\Programs\Startup\5c74.bat`
+
+<img width="1783" height="938" alt="image" src="https://github.com/user-attachments/assets/0171e84b-d135-4641-9c74-89a4c4969c47" />
