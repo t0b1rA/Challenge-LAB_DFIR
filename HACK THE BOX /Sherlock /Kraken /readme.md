@@ -1,4 +1,4 @@
-<img width="1897" height="814" alt="image" src="https://github.com/user-attachments/assets/91c2421b-c93e-426b-bf0f-9d454e75a40d" /># Kraken
+# Kraken
 
 <img width="1598" height="657" alt="image" src="https://github.com/user-attachments/assets/5966b0c8-f6db-45c4-9597-65ae6f93ecb4" />
 
