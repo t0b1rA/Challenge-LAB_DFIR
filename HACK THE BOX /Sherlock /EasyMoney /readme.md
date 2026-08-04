@@ -118,6 +118,133 @@ Thời gian 2 file được create gần như là như nhau, nên mình nghĩ l�
 
 <img width="1219" height="572" alt="image" src="https://github.com/user-attachments/assets/8f541e15-c728-42ef-9515-e2a3e47290e9" />
 
-Khi vào folder `CryptNetUrlCache\Content` mình có thể thấy ngay được 2 byte đầu tiên của file `A16B2E6DE64B13EDF2C00F32C4559930` là `MZ` chính là signature byte của 1 file PE executable -> prove được file này chính là file dll malicious trong $MFT được dùng cho dll hijacking. Giờ mình cần extract nó ra ròi lấy sha256sum là được:
+Khi vào folder `LocalLow\Microsoft\CryptNetUrlCache\Content` mình có thể thấy ngay được 2 byte đầu tiên của file `A16B2E6DE64B13EDF2C00F32C4559930` là `MZ` chính là signature byte của 1 file PE executable -> prove được file này chính là file dll malicious trong $MFT được dùng cho dll hijacking. Giờ mình cần extract nó ra ròi lấy sha256sum là được:
 
 -> `A1A17EBD90610D808E761811D17DA3143F3DE0D4CC5EE92BD66000DCA87D9270`
+
+### Task 11: How many milliseconds of cumulative coded sleep delays occurred before the C2 binary provided a shell after the vulnerable application was launched?
+
+Tới đây thì khả năng reverse của mình chưa được cải thiện nhiều, nên mình chỉ thực hiện reverse sơ qua một chút về hàm đóng vai trò thực hiện create process, sleep delays, terminate process,... bên trong malicious dll (`wldp.dll`). Đầu tiên mình thực hiện detect nó bằng **DIE** để xem nó được compiler bằng ngôn ngữ gì:
+
+<img width="909" height="663" alt="image" src="https://github.com/user-attachments/assets/533655d3-4bca-49e9-b349-94a1bf5702a8" />
+
+Giờ mở IDA để reverse:
+
+<details>
+  <summary>
+    Func_Main()
+  </summary>
+
+```C++
+__int64 sleep_mutex()
+{
+  char *v0; // rdi
+  __int64 i; // rcx
+  HWND WindowW; // rax
+  HANDLE CurrentProcess; // rax
+  _BYTE v5[32]; // [rsp+0h] [rbp-50h] BYREF
+  char v6; // [rsp+50h] [rbp+0h] BYREF
+  HANDLE hObject; // [rsp+58h] [rbp+8h]
+  struct _STARTUPINFOW StartupInfo; // [rsp+80h] [rbp+30h] BYREF
+  struct _PROCESS_INFORMATION ProcessInformation; // [rsp+108h] [rbp+B8h] BYREF
+  struct _STARTUPINFOW lpStartupInfo; // [rsp+140h] [rbp+F0h] BYREF
+  struct _PROCESS_INFORMATION lpProcessInformation; // [rsp+1C8h] [rbp+178h] BYREF
+  HWND v12; // [rsp+1F8h] [rbp+1A8h]
+  char v13; // [rsp+2D4h] [rbp+284h]
+
+  v0 = &v6;
+  for ( i = 130; i; --i )
+  {
+    *(_DWORD *)v0 = -858993460;
+    v0 += 4;
+  }
+  v13 = 0;
+  sub_180070FA3(&unk_18019909F);
+  hObject = CreateMutexW(0, 1, L"Global\\YandaExeMutex");
+  if ( !hObject
+    || GetLastError() == 183
+    || (StartupInfo.cb = 104,
+        memset(&StartupInfo.lpReserved, 0, 0x60u),
+        lpStartupInfo.cb = 104,
+        memset(&lpStartupInfo.lpReserved, 0, 0x60u),
+        (v12 = FindWindowW(0, L"Yandex Browser")) != 0) )
+  {
+    CloseHandle(hObject);
+  }
+  else
+  {
+    CreateProcessW(
+      L"C:\\Users\\Administrator\\AppData\\Local\\Yandex\\YandexBrowser\\Application\\browser.exe",
+      0,
+      0,
+      0,
+      1,
+      0,
+      0,
+      0,
+      &StartupInfo,
+      &ProcessInformation);
+    Sleep(0x2710u);
+    WindowW = FindWindowW(0, L"yanda.tmp");
+    v12 = WindowW;
+    if ( !WindowW )
+    {
+      v13 = 1;
+      CreateProcessW(
+        L"C:\\Users\\Administrator\\AppData\\Local\\Temp\\yanda.tmp",
+        0,
+        0,
+        0,
+        1,
+        0,
+        0,
+        0,
+        &lpStartupInfo,
+        &lpProcessInformation);
+      Sleep(0x3E8u);
+    }
+    CloseHandle(ProcessInformation.hProcess);
+    CloseHandle(ProcessInformation.hThread);
+    if ( !v13 )
+      sub_18006E7BC("proc_info2");
+    CloseHandle(lpProcessInformation.hProcess);
+    CloseHandle(lpProcessInformation.hThread);
+    CloseHandle(hObject);
+    CurrentProcess = GetCurrentProcess();
+    TerminateProcess(CurrentProcess, 0);
+  }
+  return sub_180070742(v5, &unk_180155D10);
+}
+```
+</details>
+
+Toàn bộ hàm này thực hiện các hành vi sau:
+- Đầu tiên là tạo mutex để điều khiển 1 instance duy nhất được spawn cho c2 server
+- Thực hiện CreateProcess, cho malware thực hiện kết nối đến c2 server
+- Tạo thời gian delays sleep bên trong 2 hàm `Sleep(0x2710u) -> 10000ms` & `Sleep(0x3E8u) -> 1000ms`
+- Close các handled hiện tại và terminated process
+
+-> Thời gian delays -> 10000 + 1000 = 11000ms
+
+### Task 12 What is the mutex name used to ensure only one instance of the C2 binary runs at a time?
+
+-> Global\\YandaExeMutex
+
+### Task 13: What is the full path of the Command and Control (C2) Binary?
+
+Chúng ta có thể lấy được từ source main func của dll trên, hoặc lấy được từ MFT 
+
+-> C:\Users\Administrator\AppData\Local\Temp\yanda.tmp
+
+### Task 14: What is the name of the C2 framework used by the attacker?
+
+Framework của C2 server mình lấy được từ virustotal:
+
+<img width="1579" height="449" alt="image" src="https://github.com/user-attachments/assets/7f0bc721-484e-4504-959c-eb8e8913e2ee" />
+
+-> sliver
+
+### Task 15: What is the IP address and port number of the malicious C2 server used by the attacker?
+
+-> 18.192.12.126:8888
+
