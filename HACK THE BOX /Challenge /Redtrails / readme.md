@@ -7,7 +7,9 @@ Scenario: Our SOC team detected a suspicious activity on one of our redis instan
 ### Skill: 
 
 Wireshark tools to read packet, stream, thread of the attack 
+
 Basic reverse dll - pe executable file
+
 Deobfuscated 
 
 ### Writeup 
