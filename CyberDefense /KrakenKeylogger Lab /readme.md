@@ -202,20 +202,31 @@ Tiếp tục research về lolapps, có thể được sử dụng để dùng c
 # LNK structure
 
 1 file lnk thông thường sẽ được chia thành 5 fields chính:
-
+```
 [Header]
-[LINKTARGET_IDLIST] *
-[LinkInfo]
-[String_Data]
-[Extra_DATA]
 
+[LINKTARGET_IDLIST] *
+
+[LinkInfo]
+
+[String_Data]
+
+[Extra_DATA]
+```
 
 Đặc biệt bên trong cấu trúc 5 fields chính này, thì field đóng vai trò được các attacker lợi dung để trỏ tới các process độc hại và các file độc hại là field `LINKTARGET_IDLIST`, bên trong của field này sẽ có them 5 subfield nhỏ hơn bên trong là:
-			                     [NAME_STRING]
-			                     [Relative_PATH] *
-[LINKTARGET_IDLIST] -> 	[Working_DIR]
-			                     [COMMAND_LINE_ARGUMENT] *
-			                     [ICON_LOCATION]
+
+```
+[NAME_STRING]
+			                    
+[Relative_PATH] *
+
+[Working_DIR]
+			                     
+[COMMAND_LINE_ARGUMENT] *
+			                     
+[ICON_LOCATION]
+```
 
 Bên trong của 5 sub fields này cũng sẽ có 2 subfields chính quan trọng khác mà malware thường nhắm đến là `relative_path` và `command_line_agrument`. 
 
