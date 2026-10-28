@@ -134,3 +134,68 @@ print(f"Sau khi đổi cặp: {new_text}")
 -> Url: **https://masherofmasters.cyou/chin/se1.hta**, domain: **masherofmasters.cyou**.
 
 **Task 4: What is the name of the command that the attacker injected using one of the installed LOLAPPS on the machine to achieve persistence?**
+
+Ở đây mình research về **LOLAPPS** là gì> - `Living of the lands applications` là các ứng dụng legit mà attacker thực hiện dùng để lợi dụng cho mục đích tấn công trong chuỗi chain attack của mình. Và research về các `lolapps` có thể được lợi dụng để thực thi persistence thì mình tìm được:
+
+<img width="1737" height="1215" alt="image" src="https://github.com/user-attachments/assets/5a25d281-a779-4f5e-b616-e98abf9966a7" />
+
+**Greenshot** là ứng dụng dùng để chụp lại màn hình screen 1 cách tự động được phát triển bởi Microsoft Windows, và 1 trong các plugins của nó là cho phép thực hiện thực thi command từ xa dành cho việc screenshot thôi, thế nhưng attacker đã lợi dụng plugins này và cho phép persistence bằng pattern phổ biến:
+
+```
+[ExternalCommand] plugins configurations
+Command=(ứng dụng nào đó mà victim thường open) - đây là name để gọi 1 tiến trình từ - config Commandline
+....
+Commandline.<name đặt phía trên> --- Gọi 1 tiến trình để thực hiện persistence thông thường sẽ là cmd.exe/powershell.exe
+Agrument.<name> --- Dùng để gọi tham số cho tiến trình được call phía trên để hoàn tất 1 command persistence
+```
+
+Ngay bên trong config greenshot.ini của victim cũng đã để lại pattern rất rõ ràng cho việc persistence:
+
+```
+; Greenshot ExternalCommand Plugin configuration
+[ExternalCommand]
+; The commands that are available.
+Commands=MS Paint,jlhgfjhdflghjhuhuh
+; Redirect the standard error of all external commands, used to output as warning to the greenshot.log.
+RedirectStandardError=True
+; Redirect the standard output of all external commands, used for different other functions (more below).
+RedirectStandardOutput=True
+; Depends on 'RedirectStandardOutput': Show standard output of all external commands to the Greenshot log, this can be usefull for debugging.
+ShowStandardOutputInLog=False
+; Depends on 'RedirectStandardOutput': Parse the output and take the first found URI, if a URI is found than clicking on the notify bubble goes there.
+ParseForUri=True
+; Depends on 'RedirectStandardOutput': Place the standard output on the clipboard.
+OutputToClipboard=False
+; Depends on 'RedirectStandardOutput' & 'ParseForUri': If an URI is found in the standard input, place it on the clipboard. (This overwrites the output from OutputToClipboard setting.)
+UriToClipboard=True
+; The commandline for the output command.
+Commandline.MS Paint=C:\Windows\System32\mspaint.exe
+Commandline.jlhgfjhdflghjhuhuh=C:\Windows\system32\cmd.exe
+; The arguments for the output command.
+Argument.MS Paint="{0}"
+Argument.jlhgfjhdflghjhuhuh=/c "C:\Users\OMEN\AppData\Local\Temp\templet.lnk"
+; Should the command be started in the background.
+RunInbackground.MS Paint=True
+```
+> Ở đây nó thực hiện tạo 2 name cho command thực thi là `MS Paint, jlhgfjhdflghjhuhuh`. Sau đó bên dưới với name `MS Paint` thì gọi đến process `mspaint.exe` thông thường nhưng với name `jlhgfjhdflghjhuhuh` thì nó gọi đến process cmd.exe. Sau đó bên dưới agruments thì nó không thêm gì cho process mspaint.exe, còn đối với cmd.exe nó thêm vào tham số thực thi command `c "C:\Users\OMEN\AppData\Local\Temp\templet.lnk"` -> gọi lại file templet.lnk ban nãy đã phân tích.
+>
+
+-> **jlhgfjhdflghjhuhuh**
+
+**Task 5: What is the complete path of the malicious file that the attacker used to achieve persistence?**
+
+Như đã phân tích thì commandline gọi tới tham số `/c` trong cmd.exe để thực thi file `.lnk` chứa lệnh powershell để thực hiện persistence
+
+-> **C:\Users\OMEN\AppData\Local\Temp\templet.lnk**
+
+**Task 6: What is the name of the application the attacker utilized for data exfiltration?**
+
+Tiếp tục research về lolapps, có thể được sử dụng để dùng cho việc exfiltration data, thì mình biết được ứng dụng anydesk có thể thực hiện để connect tới ip C2 của attacker và thực hiện việc truyền dữ liệu ra bên ngoài, artifact để lại sẽ nằm bên trong file `ad.trace` chứa các ip mà máy đã thực hiện connect tới
+
+-> **anydesk**
+
+**Task 7: What is the IP address of the attacker?**
+
+-> Trace theo fields `exxternal address` trong file ad.trace, sau đó trace với timeline thực thi file templet.lnk trong EventView, mình sẽ tìm được trong khoảng thời gian đó, ứng dụng anydesk đã connect tới ip `77.232.122.31`
+
+<img width="1080" height="868" alt="image" src="https://github.com/user-attachments/assets/72d721fe-2c03-4c4b-93a1-8ee78c8860cb" />
