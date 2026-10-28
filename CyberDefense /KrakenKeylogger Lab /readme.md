@@ -198,4 +198,47 @@ Tiếp tục research về lolapps, có thể được sử dụng để dùng c
 
 -> Trace theo fields `exxternal address` trong file ad.trace, sau đó trace với timeline thực thi file templet.lnk trong EventView, mình sẽ tìm được trong khoảng thời gian đó, ứng dụng anydesk đã connect tới ip `77.232.122.31`
 
+
+# LNK structure
+
+1 file lnk thông thường sẽ được chia thành 5 fields chính:
+
+[Header]
+[LINKTARGET_IDLIST] *
+[LinkInfo]
+[String_Data]
+[Extra_DATA]
+
+
+Đặc biệt bên trong cấu trúc 5 fields chính này, thì field đóng vai trò được các attacker lợi dung để trỏ tới các process độc hại và các file độc hại là field `LINKTARGET_IDLIST`, bên trong của field này sẽ có them 5 subfield nhỏ hơn bên trong là:
+			                     [NAME_STRING]
+			                     [Relative_PATH] *
+[LINKTARGET_IDLIST] -> 	[Working_DIR]
+			                     [COMMAND_LINE_ARGUMENT] *
+			                     [ICON_LOCATION]
+
+Bên trong của 5 sub fields này cũng sẽ có 2 subfields chính quan trọng khác mà malware thường nhắm đến là `relative_path` và `command_line_agrument`. 
+
+Trong LNK file, thì 3 fields chính trực tiếp liên quan đến target mà malware nhắm đến có định nghĩa đơn giản như sau:
+
+- `LINKTARGET_IDLIST`: 1 danh sách các shell items, cụ thể của target
+- `RELATIVE_PATH`: Path liên quan đến target đến mà file lnk trỏ đến
+- `COMMAND_LINE_AGRUMENTS`: các tham số được sử dung bởi target
+
+
+LINKTARGET_IDLIST field có cấu trúc như sau:
+
+field Size | Shell Item [0] | Shell Item [1] | Shell Item [2] | Shell Item [..] |
+
+`LINKTARGET_IDLIST` field xác định rõ target xác định destination cảu lnk file. `LinkTargetIDList` chứa các thành phần ID đại diện cho các direc tree. Mỗi ID sẽ đại diện cho full path của target file.
+
+RELATIVE_PATH subfields: chứa dữ liệu dạng văn bản, chứa đường dẫn tương tối của file `.lnk` tới với destination file, khi đó sự liên kết của file với file `.lnk` sẽ không thay đổi nếu file bị di chuyển.
+
+COMMAND_LINE_AGRUMENTS: chứa các tham số command-line nên được chuyển cho destination của file `.lnk`, cung cấp các settings và option command-line cụ thể cho destination của file `.lnk`.
+
+
+
+
+
+
 <img width="1080" height="868" alt="image" src="https://github.com/user-attachments/assets/72d721fe-2c03-4c4b-93a1-8ee78c8860cb" />
