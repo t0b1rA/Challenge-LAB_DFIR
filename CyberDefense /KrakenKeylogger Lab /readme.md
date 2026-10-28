@@ -199,6 +199,8 @@ Tiếp tục research về lolapps, có thể được sử dụng để dùng c
 -> Trace theo fields `exxternal address` trong file ad.trace, sau đó trace với timeline thực thi file templet.lnk trong EventView, mình sẽ tìm được trong khoảng thời gian đó, ứng dụng anydesk đã connect tới ip `77.232.122.31`
 
 
+<img width="1080" height="868" alt="image" src="https://github.com/user-attachments/assets/72d721fe-2c03-4c4b-93a1-8ee78c8860cb" />
+
 # LNK structure
 
 1 file lnk thông thường sẽ được chia thành 5 fields chính:
@@ -247,9 +249,3 @@ RELATIVE_PATH subfields: chứa dữ liệu dạng văn bản, chứa đường 
 
 COMMAND_LINE_AGRUMENTS: chứa các tham số command-line nên được chuyển cho destination của file `.lnk`, cung cấp các settings và option command-line cụ thể cho destination của file `.lnk`.
 
-
-
-
-
-
-<img width="1080" height="868" alt="image" src="https://github.com/user-attachments/assets/72d721fe-2c03-4c4b-93a1-8ee78c8860cb" />
